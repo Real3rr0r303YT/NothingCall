@@ -173,7 +173,7 @@ object Soundboard {
         _custom.value = list
     }
 
-    fun importClip(context: Context, uri: Uri): Boolean = synchronized(lock) {
+    fun importClip(context: Context, uri: Uri): Boolean {
         try {
             val displayName = context.contentResolver.query(
                 uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null
@@ -183,11 +183,13 @@ object Soundboard {
                 name = (displayName ?: "Clip").substringBeforeLast('.').take(24),
             )
             val input = context.contentResolver.openInputStream(uri) ?: return false
-            input.use { CryptoManager.encryptToFile(it, fileFor(context, clip)) }
-            persist(context, _custom.value + clip)
-            true
+            synchronized(lock) {
+                input.use { CryptoManager.encryptToFile(it, fileFor(context, clip)) }
+                persist(context, _custom.value + clip)
+            }
+            return true
         } catch (e: Exception) {
-            false
+            return false
         }
     }
 
