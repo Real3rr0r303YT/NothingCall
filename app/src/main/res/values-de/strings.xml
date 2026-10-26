@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tabs -->
+    <string name="tab_keypad">Tastatur</string>
+    <string name="tab_recents">Verlauf</string>
+    <string name="tab_contacts">Kontakte</string>
+    <string name="tab_recordings">Aufnahmen</string>
+    <string name="tab_settings">Optionen</string>
+
+    <!-- Banners -->
+    <string name="banner_default_title">Nicht deine Standard-Telefon-App</string>
+    <string name="banner_default_text">Lege NothingCall als Standard fest, um Anrufe zu verwalten, aufzunehmen und das Soundboard zu nutzen.</string>
+    <string name="banner_default_action">Als Standard festlegen</string>
+    <string name="banner_perm_title">Berechtigungen benötigt</string>
+    <string name="banner_perm_text">Kontakte, Anrufliste, Telefon und Mikrofon werden ausschließlich auf diesem Gerät genutzt.</string>
+    <string name="banner_perm_action">Erlauben</string>
+
+    <!-- Common -->
+    <string name="cancel">Abbrechen</string>
+    <string name="ok">OK</string>
+    <string name="delete">Löschen</string>
+    <string name="save">Speichern</string>
+    <string name="back">Zurück</string>
+    <string name="today">Heute</string>
+    <string name="yesterday">Gestern</string>
+    <string name="unknown_number">Unbekannt</string>
+    <string name="permission_missing">Berechtigung erforderlich</string>
+    <string name="no_app_found">Keine App zum Öffnen gefunden</string>
+    <string name="call_permission_missing">Telefon-Berechtigung erforderlich</string>
+
+    <!-- Dialer -->
+    <string name="dialer_hint">Nummer eingeben</string>
+    <string name="dialer_add_contact">Zu Kontakten hinzufügen</string>
+    <string name="dialer_call">Anrufen</string>
+    <string name="dialer_delete">Löschen</string>
+    <string name="choose_sim">SIM auswählen</string>
+
+    <!-- Recents -->
+    <string name="recents_empty">Noch keine Anrufe</string>
+    <string name="call_type_incoming">Eingehend</string>
+    <string name="call_type_outgoing">Ausgehend</string>
+    <string name="call_type_missed">Verpasst</string>
+    <string name="call_type_rejected">Abgelehnt</string>
+    <string name="call_type_blocked">Blockiert</string>
+
+    <!-- Contacts -->
+    <string name="contacts_search">Suchen</string>
+    <string name="contacts_favorites">Favoriten</string>
+    <string name="contacts_all">Alle Kontakte</string>
+    <string name="contacts_private">Privat · verschlüsselt</string>
+    <string name="contacts_empty">Keine Kontakte</string>
+    <string name="contacts_add_private">Neuer privater Kontakt</string>
+    <string name="contacts_private_hint">Private Kontakte verlassen nie diese App und werden AES-256-verschlüsselt gespeichert.</string>
+    <string name="contact_name">Name</string>
+    <string name="contact_number">Nummer</string>
+    <string name="choose_number">Nummer wählen</string>
+    <string name="contact_delete_confirm">Diesen privaten Kontakt löschen?</string>
+
+    <!-- Recordings -->
+    <string name="recordings_empty">Noch keine Aufnahmen</string>
+    <string name="recordings_footer">AES-256-GCM-verschlüsselt · nur auf diesem Gerät gespeichert</string>
+    <string name="recording_export">Exportieren</string>
+    <string name="recording_delete_confirm">Diese Aufnahme endgültig löschen?</string>
+    <string name="recording_exported">Aufnahme exportiert</string>
+    <string name="recording_failed">Aufnahme konnte auf diesem Gerät nicht gestartet werden</string>
+    <string name="recording_saved">Aufnahme gespeichert (verschlüsselt)</string>
+    <string name="recording_play_failed">Aufnahme konnte nicht entschlüsselt werden</string>
+
+    <!-- In-call -->
+    <string name="incall_incoming">Eingehender Anruf</string>
+    <string name="incall_dialing">Wählt…</string>
+    <string name="incall_connecting">Verbinde…</string>
+    <string name="incall_active">Verbunden</string>
+    <string name="incall_on_hold">Gehalten</string>
+    <string name="incall_ended">Anruf beendet</string>
+    <string name="incall_select_sim">SIM wählen</string>
+    <string name="incall_answer">Annehmen</string>
+    <string name="incall_decline">Ablehnen</string>
+    <string name="incall_hangup">Auflegen</string>
+    <string name="incall_mute">Stumm</string>
+    <string name="incall_keypad">Tasten</string>
+    <string name="incall_speaker">Lautsprecher</string>
+    <string name="incall_hold">Halten</string>
+    <string name="incall_record">Aufnahme</string>
+    <string name="incall_soundboard">Soundboard</string>
+    <string name="incall_swap">Wechseln</string>
+    <string name="incall_hide">Ausblenden</string>
+    <string name="incall_rec">REC</string>
+
+    <!-- Soundboard -->
+    <string name="soundboard_title">Soundboard</string>
+    <string name="soundboard_stop">Stopp</string>
+    <string name="soundboard_hint">Clips werden über den Lautsprecher in das Gespräch abgespielt. Ob dein Gegenüber sie hört, hängt von der Echounterdrückung deines Geräts ab.</string>
+    <string name="soundboard_builtin">Integriert</string>
+    <string name="soundboard_custom">Eigene Clips</string>
+    <string name="soundboard_add">Clip importieren</string>
+    <string name="soundboard_imported">Clip importiert (verschlüsselt)</string>
+    <string name="soundboard_import_failed">Clip konnte nicht importiert werden</string>
+    <string name="soundboard_custom_empty">Importiere eigene Audiodateien – sie werden verschlüsselt gespeichert.</string>
+    <string name="clip_bleep">Piep</string>
+    <string name="clip_dingdong">Ding Dong</string>
+    <string name="clip_badumtss">Ba Dum Tss</string>
+    <string name="clip_sadtrombone">Traurige Posaune</string>
+    <string name="clip_airhorn">Tröte</string>
+    <string name="clip_tada">Tadaa</string>
+    <string name="clip_siren">Sirene</string>
+    <string name="clip_crickets">Grillen</string>
+
+    <!-- Settings -->
+    <string name="settings_general">Allgemein</string>
+    <string name="settings_default_app">Standard-Telefon-App</string>
+    <string name="settings_default_yes">NothingCall ist deine Standard-Telefon-App</string>
+    <string name="settings_default_no">Tippen, um als Standard festzulegen</string>
+    <string name="settings_language">Sprache</string>
+    <string name="lang_system">Systemsprache</string>
+    <string name="settings_dialpad_tones">Tastentöne</string>
+    <string name="settings_recording">Anrufaufnahme</string>
+    <string name="settings_auto_record">Alle Anrufe automatisch aufnehmen</string>
+    <string name="settings_audio_source">Audioquelle</string>
+    <string name="source_auto">Automatisch</string>
+    <string name="source_voice_call">Sprachanruf (System/Root)</string>
+    <string name="source_voice_comm">Sprachkommunikation</string>
+    <string name="source_mic">Mikrofon</string>
+    <string name="settings_recording_info">Android schränkt Anrufaufnahmen für normale Apps ein. Je nach Gerät wird evtl. nur deine eigene Stimme aufgenommen – der Lautsprecher hilft meistens.</string>
+    <string name="legal_title">Rechtlicher Hinweis</string>
+    <string name="legal_text">Das Aufzeichnen von Telefonaten ohne Einwilligung aller Beteiligten kann strafbar sein (z. B. § 201 StGB in Deutschland). Informiere dein Gegenüber immer vor der Aufnahme. Du bist allein dafür verantwortlich, wie du diese Funktion nutzt.</string>
+    <string name="legal_accept">Verstanden</string>
+    <string name="settings_soundboard">Soundboard</string>
+    <string name="settings_soundboard_manage">Clips verwalten</string>
+    <string name="settings_soundboard_speaker">Beim Abspielen Lautsprecher aktivieren</string>
+    <string name="settings_privacy">Datenschutz</string>
+    <string name="privacy_point_1">Keine Internet-Berechtigung – die App kann technisch keine Daten senden.</string>
+    <string name="privacy_point_2">Keine Telemetrie, keine Analyse, keine Cloud, keine Werbung.</string>
+    <string name="privacy_point_3">Aufnahmen, Clips und private Kontakte sind mit AES-256-GCM verschlüsselt; der Schlüssel wird vom Android Keystore geschützt.</string>
+    <string name="privacy_point_4">Backups sind deaktiviert – deine Daten verlassen nie das Gerät.</string>
+    <string name="settings_wipe">Alle App-Daten löschen</string>
+    <string name="settings_wipe_confirm">Alle Aufnahmen, importierten Clips und privaten Kontakte werden endgültig gelöscht und der Schlüssel vernichtet.</string>
+    <string name="settings_wiped">Alle Daten gelöscht</string>
+    <string name="settings_about">Über</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_license">Lizenz</string>
+    <string name="settings_source">Quellcode</string>
+    <string name="settings_copyright">© 2026 Real3rr0r303YT · Freie Software unter der GNU GPLv3</string>
+    <string name="settings_support">Spendier mir einen Kaffee</string>
+    <string name="settings_support_text">NothingCall ist frei und quelloffen. Wenn dir die App gefällt, kannst du die Entwicklung unterstützen.</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_incoming">Eingehende Anrufe</string>
+    <string name="notif_channel_ongoing">Laufende Anrufe</string>
+    <string name="notif_channel_recording">Anrufaufnahme</string>
+    <string name="notif_ongoing">Laufender Anruf</string>
+    <string name="notif_recording">Anruf wird aufgenommen…</string>
+    <string name="notif_recording_text">Verschlüsselt · nur auf diesem Gerät</string>
+</resources>
