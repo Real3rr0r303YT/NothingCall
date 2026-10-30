@@ -79,7 +79,7 @@ GitHub Actions builds debug and release APKs plus a source ZIP on every push, an
 ---
 
 ## ☕ Support
-NothingCall is free software. If you like it: **[Buy me a coffee](https://www.buymeacoffee.com/3rr0r303yt)**
+NothingCall is free software. If you like it: **[Buy me a coffee](https://buymeacoffee.com/3rr0r303YT)**
 
 ## License
 Copyright © 2026 **Real3rr0r303YT**
@@ -87,3 +87,5 @@ Copyright © 2026 **Real3rr0r303YT**
 This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License v3.0** as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [`LICENSE`](LICENSE).
 
 Material icons © Google, Apache License 2.0.
+
+<p align="center"><b>Made by <a href="https://github.com/Real3rr0r303YT">Real3rr0r303YT</a></b></p>
