@@ -80,7 +80,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-const val SUPPORT_URL = "https://www.buymeacoffee.com/3rr0r303yt"
+const val SUPPORT_URL = "https://buymeacoffee.com/3rr0r303YT"
 const val SOURCE_URL = "https://github.com/Real3rr0r303YT/NothingCall"
 const val LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 
