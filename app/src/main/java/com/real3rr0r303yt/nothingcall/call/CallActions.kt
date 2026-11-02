@@ -18,6 +18,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.telecom.PhoneAccountHandle
 import android.telecom.TelecomManager
+import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
 import com.real3rr0r303yt.nothingcall.R
 import com.real3rr0r303yt.nothingcall.util.toast
@@ -31,7 +32,57 @@ object CallActions {
     fun isDefaultDialer(context: Context): Boolean =
         context.getSystemService(RoleManager::class.java)?.isRoleHeld(RoleManager.ROLE_DIALER) == true
 
-    fun placeCall(context: Context, number: String, account: PhoneAccountHandle? = null) {
+    /** GSM/UMTS/LTE "CLIR" prefix: suppresses your number for this single call. */
+    const val CLIR_PREFIX = "#31#"
+    private val CLIR_PREFIXES = listOf("#31#", "*31#")
+
+    /** Removes CLIR prefixes for display purposes. */
+    fun stripClir(number: String): String {
+        var n = number.trim()
+        CLIR_PREFIXES.forEach { if (n.startsWith(it)) n = n.removePrefix(it) }
+        return n
+    }
+
+    private val FALLBACK_EMERGENCY = setOf("110", "112", "911", "999", "000", "118", "119", "116117")
+
+    fun isEmergency(context: Context, number: String): Boolean {
+        val digits = number.filter { it.isDigit() || it == '+' }
+        return try {
+            context.getSystemService(TelephonyManager::class.java)?.isEmergencyNumber(digits) == true
+        } catch (e: Exception) {
+            digits in FALLBACK_EMERGENCY
+        } || digits in FALLBACK_EMERGENCY
+    }
+
+    /**
+     * Number that is actually dialed. Emergency numbers and USSD/MMI codes are never touched –
+     * hiding your number from emergency services is neither possible nor wanted.
+     */
+    fun dialString(context: Context, number: String, anonymous: Boolean): String {
+        val clean = stripClir(number)
+        if (!anonymous) return clean
+        if (clean.startsWith("*") || clean.startsWith("#")) return clean
+        if (isEmergency(context, clean)) return clean
+        return CLIR_PREFIX + clean
+    }
+
+    /** Opens the carrier caller-ID settings ("Rufnummer anzeigen"). */
+    fun openNetworkCallSettings(context: Context): Boolean = try {
+        context.startActivity(
+            android.content.Intent(TelecomManager.ACTION_SHOW_CALL_SETTINGS)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+    fun placeCall(
+        context: Context,
+        number: String,
+        account: PhoneAccountHandle? = null,
+        anonymous: Boolean = false,
+    ) {
         if (number.isBlank()) return
         if (!granted(context, Manifest.permission.CALL_PHONE)) {
             context.toast(R.string.call_permission_missing)
@@ -41,7 +92,7 @@ object CallActions {
         val extras = Bundle()
         if (account != null) extras.putParcelable(TelecomManager.EXTRA_PHONE_ACCOUNT_HANDLE, account)
         try {
-            telecom.placeCall(Uri.fromParts("tel", number, null), extras)
+            telecom.placeCall(Uri.fromParts("tel", dialString(context, number, anonymous), null), extras)
         } catch (e: SecurityException) {
             context.toast(R.string.call_permission_missing)
         }

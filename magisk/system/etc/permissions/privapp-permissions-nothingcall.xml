@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NothingCall (GPLv3) – privileged permissions for system mode -->
+<permissions>
+    <privapp-permissions package="com.real3rr0r303yt.nothingcall">
+        <permission name="android.permission.CAPTURE_AUDIO_OUTPUT" />
+        <permission name="android.permission.CALL_AUDIO_INTERCEPTION" />
+    </privapp-permissions>
+</permissions>

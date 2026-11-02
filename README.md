@@ -29,9 +29,18 @@ NothingCall ist eine vollständige Telefon-App (Standard-Dialer) mit tiefschwarz
 | 💾 Keine Backups | `allowBackup=false` und Data-Extraction-Rules schließen alles aus |
 | 🧹 Löschen | „Alle App-Daten löschen“ entfernt Aufnahmen, Clips und private Kontakte und vernichtet die Schlüssel |
 
+### Neu in 1.1 – Anonymität, Spam-Schutz & OPSEC
+- **Anonym anrufen:** Schalter in der Wähltastatur bzw. Standard in den Einstellungen. Die App wählt automatisch `#31#` vor die Nummer (Rufnummernunterdrückung, CLIR). Notrufnummern und `*`/`#`-Codes sind ausgenommen. Zusätzlich gibt es einen Link zur dauerhaften Unterdrückung beim Netzbetreiber.
+- **Spam-Schutz (100 % offline):** eigener `CallScreeningService` mit verschlüsselter Sperrliste (genaue Nummern oder Präfixe wie `+44*` / `0900*`). Optional lassen sich unterdrückte Nummern, Nummern außerhalb der Kontakte und gefälschte Nummern (STIR/SHAKEN fehlgeschlagen) blockieren. Wahlweise abweisen oder nur stummschalten. Dazu gibt es ein verschlüsseltes Protokoll blockierter Anrufe sowie „Blockieren“ per langem Druck im Verlauf und direkt beim eingehenden Anruf.
+- **OPSEC:** App-Sperre (Fingerabdruck/PIN), Screenshot- und Bildschirmaufnahme-Schutz (`FLAG_SECURE`), Anrufer auf dem Sperrbildschirm verbergen und automatisches Löschen der Anrufliste (sofort / 24 h / 7 Tage).
+- **Anrufaufnahme verbessert:** Die App erkennt stumme Audioquellen und wechselt automatisch zur nächsten. Optional schaltet sie beim Aufnehmen den Lautsprecher ein.
+- **Systemmodus (Magisk, Root):** NothingCall wird als privilegierte System-App installiert. Damit wird das Gespräch auf **beiden Seiten** aufgenommen (`VOICE_CALL`), und Soundboard-Clips laufen ab Android 14 **direkt ins Gespräch** (`getCallUplinkInjectionAudioTrack`). Details stehen in [`magisk/README.md`](magisk/README.md). CI baut das Modul als `NothingCall-<version>-magisk.zip`.
+
+> Anonymität hat Grenzen: `#31#` verbirgt deine Nummer nur vor der angerufenen Person. Der Netzbetreiber (und auf Anfrage Behörden) sieht immer, wer wen anruft, und Notrufe zeigen deine Nummer immer an.
+
 ### Wichtige Hinweise (technische Grenzen von Android)
-- **Anrufaufnahme:** Seit Android 9 dürfen nur System-Apps die Audioquelle `VOICE_CALL` (beide Seiten) nutzen. NothingCall versucht diese Quelle zuerst und weicht dann auf Sprachkommunikation bzw. Mikrofon aus. Je nach Gerät wird daher eventuell nur deine eigene Stimme aufgenommen. Mit eingeschaltetem Lautsprecher ist die Gegenseite meist mit drauf. Die Audioquelle lässt sich in den Einstellungen wählen.
-- **Soundboard:** Normale Apps können kein Audio direkt in den Mobilfunk-Uplink einspeisen. Die Clips werden deshalb über den Lautsprecher abgespielt (optional schaltet die App ihn automatisch ein). Ob das Gegenüber sie hört, hängt von der Echounterdrückung des Geräts ab.
+- **Anrufaufnahme (ohne Systemmodus):** Seit Android 9 dürfen nur System-Apps die Audioquelle `VOICE_CALL` (beide Seiten) nutzen. NothingCall versucht diese Quelle zuerst und weicht dann auf Sprachkommunikation bzw. Mikrofon aus. Je nach Gerät wird daher eventuell nur deine eigene Stimme aufgenommen. Mit eingeschaltetem Lautsprecher ist die Gegenseite meist mit drauf. Die Audioquelle lässt sich in den Einstellungen wählen.
+- **Soundboard (ohne Systemmodus):** Normale Apps können kein Audio direkt in den Mobilfunk-Uplink einspeisen. Die Clips werden deshalb über den Lautsprecher abgespielt (optional schaltet die App ihn automatisch ein). Ob das Gegenüber sie hört, hängt von der Echounterdrückung des Geräts ab.
 - **Rechtliches:** Das Aufzeichnen von Gesprächen ohne Einwilligung aller Beteiligten kann strafbar sein (z. B. § 201 StGB). Die App zeigt vor der ersten Aufnahme einen Hinweis.
 
 ### Bauen
@@ -66,6 +75,13 @@ NothingCall is a full replacement phone app (default dialer) with a true-black O
 - AES-256-GCM encryption with a data key wrapped by a non-exportable Android Keystore key
 - Backups and device transfer disabled
 - One-tap "Delete all app data", which also destroys the keys
+
+### New in 1.1 – anonymity, spam protection & OPSEC
+- **Anonymous calls:** per-call toggle in the dialer, or a default in settings. NothingCall dials the `#31#` CLIR prefix. Emergency numbers and MMI codes are never touched.
+- **Offline spam protection:** `CallScreeningService` with an encrypted block list (exact numbers or prefixes), plus optional blocking of hidden numbers, numbers not in your contacts, and spoofed numbers (STIR/SHAKEN failed). Blocked calls can be rejected or silenced and are kept in an encrypted log.
+- **OPSEC:** app lock (biometric or PIN), `FLAG_SECURE`, caller hidden on the lock screen, and automatic call-log wiping.
+- **Recording fixes:** silent audio sources are detected and the next source is tried automatically. The speaker can be turned on automatically while recording.
+- **System mode (Magisk):** two-sided recording, and on Android 14+ soundboard audio is injected straight into the call. See [`magisk/README.md`](magisk/README.md).
 
 ### Known platform limitations
 - **Call recording:** Since Android 9, only system apps may use `VOICE_CALL` (both sides). NothingCall tries it first and then falls back to voice communication or the microphone, so on many devices only your own voice is captured unless the speaker is on. The audio source can be chosen in settings.

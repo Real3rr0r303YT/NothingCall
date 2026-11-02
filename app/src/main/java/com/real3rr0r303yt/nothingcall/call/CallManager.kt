@@ -100,7 +100,8 @@ object CallManager {
         _audioState.value = state
     }
 
-    private fun numberOf(call: Call): String = call.details?.handle?.schemeSpecificPart.orEmpty()
+    private fun numberOf(call: Call): String =
+        CallActions.stripClir(call.details?.handle?.schemeSpecificPart.orEmpty())
 
     private fun publish() {
         _calls.value = rawCalls.map { call ->

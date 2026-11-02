@@ -13,10 +13,12 @@ package com.real3rr0r303yt.nothingcall
 import android.app.Application
 import com.real3rr0r303yt.nothingcall.call.Notifications
 import com.real3rr0r303yt.nothingcall.data.AppPrefs
+import com.real3rr0r303yt.nothingcall.data.CallLogCleaner
 import com.real3rr0r303yt.nothingcall.data.ContactsRepository
 import com.real3rr0r303yt.nothingcall.recording.RecordingRepository
 import com.real3rr0r303yt.nothingcall.security.CryptoManager
 import com.real3rr0r303yt.nothingcall.soundboard.Soundboard
+import com.real3rr0r303yt.nothingcall.spam.BlockRepository
 import com.real3rr0r303yt.nothingcall.util.AppScope
 import kotlinx.coroutines.launch
 
@@ -31,6 +33,8 @@ class NothingCallApp : Application() {
             runCatching { RecordingRepository.load(this@NothingCallApp) }
             runCatching { ContactsRepository.loadPrivate(this@NothingCallApp) }
             runCatching { Soundboard.loadCustom(this@NothingCallApp) }
+            runCatching { BlockRepository.load(this@NothingCallApp) }
+            runCatching { CallLogCleaner.apply(this@NothingCallApp) }
         }
     }
 }

@@ -23,7 +23,7 @@ import kotlin.random.Random
  * questions, a few kilobytes of code instead of megabytes of samples.
  */
 object SoundSynth {
-    const val SAMPLE_RATE = 44_100
+    const val SAMPLE_RATE = 48_000
     private const val TAU = 2 * PI
 
     private val sine: (Double) -> Double = { sin(it) }

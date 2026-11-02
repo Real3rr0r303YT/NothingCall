@@ -21,6 +21,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.Person
 import com.real3rr0r303yt.nothingcall.R
+import com.real3rr0r303yt.nothingcall.data.AppPrefs
 
 object Notifications {
     const val CHANNEL_INCOMING = "nc_incoming"
@@ -68,6 +69,24 @@ object Notifications {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+    /** OPSEC: generic notification shown on the lock screen instead of name and number. */
+    private fun publicVersion(context: Context, channel: String, text: Int): Notification =
+        NotificationCompat.Builder(context, channel)
+            .setSmallIcon(R.drawable.ic_stat_call)
+            .setColor(RED)
+            .setContentTitle(context.getString(R.string.app_name))
+            .setContentText(context.getString(text))
+            .build()
+
+    private fun NotificationCompat.Builder.applyPrivacy(context: Context, channel: String, text: Int) = apply {
+        if (AppPrefs.hideOnLockscreen.value) {
+            setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            setPublicVersion(publicVersion(context, channel, text))
+        } else {
+            setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        }
+    }
+
     fun showIncoming(context: Context, title: String) {
         val person = Person.Builder().setName(title).setImportant(true).build()
         val notification = NotificationCompat.Builder(context, CHANNEL_INCOMING)
@@ -77,7 +96,7 @@ object Notifications {
             .setContentText(context.getString(R.string.incall_incoming))
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .applyPrivacy(context, CHANNEL_INCOMING, R.string.incall_incoming)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(inCallIntent(context, answer = false))
@@ -100,7 +119,7 @@ object Notifications {
             .setContentTitle(title)
             .setContentText(context.getString(R.string.notif_ongoing))
             .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .applyPrivacy(context, CHANNEL_ONGOING, R.string.notif_ongoing)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(inCallIntent(context, answer = false))

@@ -26,7 +26,13 @@ import com.real3rr0r303yt.nothingcall.call.Notifications
 import com.real3rr0r303yt.nothingcall.data.AppPrefs
 import com.real3rr0r303yt.nothingcall.util.AppScope
 import com.real3rr0r303yt.nothingcall.util.toast
+import com.real3rr0r303yt.nothingcall.call.CallManager
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -36,8 +42,10 @@ import kotlinx.coroutines.withContext
 /** Foreground service (type microphone) that keeps recording while the screen is off. */
 class RecordingService : Service() {
 
-    data class State(val recording: Boolean = false, val startedAt: Long = 0L)
+    data class State(val recording: Boolean = false, val startedAt: Long = 0L, val bothSides: Boolean = false)
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var watchdog: Job? = null
     private var recorder: CallRecorder? = null
     private var number: String = ""
     private var name: String? = null
@@ -86,10 +94,45 @@ class RecordingService : Service() {
         }
         recorder = r
         startedAt = System.currentTimeMillis()
-        _state.value = State(recording = true, startedAt = startedAt)
+        onSourceStarted(r)
+        watchdog = scope.launch { watchSilence(r) }
+    }
+
+    private fun onSourceStarted(r: CallRecorder) {
+        _state.value = State(recording = true, startedAt = startedAt, bothSides = r.bothSides)
+        // Mic-only capture hears the other side only through the loudspeaker.
+        if (!r.bothSides && AppPrefs.recordSpeaker.value && !CallManager.isSpeakerOn) {
+            CallManager.setSpeaker(true)
+        }
+    }
+
+    /**
+     * Many ROMs hand out a silent stream instead of refusing a source. If the first seconds are
+     * pure digital silence, fall back to the next source automatically.
+     */
+    private suspend fun watchSilence(r: CallRecorder) {
+        var silentChecks = 0
+        repeat(8) {
+            delay(1_500)
+            if (recorder !== r) return
+            if (r.maxAmplitude() > 0) return
+            silentChecks++
+            if (silentChecks >= 2 && r.hasFallback) {
+                silentChecks = 0
+                if (r.switchToNextSource()) {
+                    onSourceStarted(r)
+                } else {
+                    toast(R.string.recording_failed)
+                    finish()
+                    return
+                }
+            }
+        }
     }
 
     private fun finish() {
+        watchdog?.cancel()
+        watchdog = null
         val r = recorder
         recorder = null
         _state.value = State()
@@ -112,6 +155,7 @@ class RecordingService : Service() {
 
     override fun onDestroy() {
         if (recorder != null) finish()
+        scope.cancel()
         super.onDestroy()
     }
 
