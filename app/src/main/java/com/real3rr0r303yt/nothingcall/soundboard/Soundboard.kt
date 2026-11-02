@@ -14,7 +14,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
-import android.media.MediaPlayer
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.annotation.StringRes
@@ -24,13 +23,13 @@ import com.real3rr0r303yt.nothingcall.data.AppPrefs
 import com.real3rr0r303yt.nothingcall.security.CryptoManager
 import com.real3rr0r303yt.nothingcall.security.SecureStore
 import com.real3rr0r303yt.nothingcall.util.AppScope
-import com.real3rr0r303yt.nothingcall.util.ByteArrayMediaDataSource
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -67,10 +66,16 @@ object Soundboard {
     private val _playing = MutableStateFlow<String?>(null)
     val playing: StateFlow<String?> = _playing.asStateFlow()
 
+    /** How clips reach the other party. */
+    enum class Mode { INJECT, SPEAKER }
+
     private val pcmCache = HashMap<String, ShortArray>()
-    private var track: AudioTrack? = null
-    private var player: MediaPlayer? = null
     private val lock = Any()
+
+    @Volatile private var token: Any? = null
+    @Volatile private var job: Job? = null
+    @Volatile private var localTrack: AudioTrack? = null
+    @Volatile private var uplinkTrack: AudioTrack? = null
 
     private val attributes: AudioAttributes = AudioAttributes.Builder()
         .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
@@ -81,29 +86,21 @@ object Soundboard {
     private fun indexFile(context: Context) = File(dir(context), "index.enc")
     private fun fileFor(context: Context, clip: SoundClip) = File(dir(context), "${clip.id}.enc")
 
-    fun play(context: Context, clip: SoundClip) {
-        stop()
-        if (AppPrefs.soundboardSpeaker.value && CallManager.calls.value.isNotEmpty() && !CallManager.isSpeakerOn) {
-            CallManager.setSpeaker(true)
+    fun mode(context: Context): Mode =
+        if (CallAudioInjector.isAvailable(context)) Mode.INJECT else Mode.SPEAKER
+
+    private fun pcmFor(context: Context, clip: SoundClip): ShortArray {
+        synchronized(lock) { pcmCache[clip.id]?.let { return it } }
+        val pcm = if (clip.builtIn) {
+            SoundSynth.generate(clip.id)
+        } else {
+            AudioDecoder.decodeMono(CryptoManager.decryptFile(fileFor(context, clip)), SoundSynth.SAMPLE_RATE)
         }
-        _playing.value = clip.id
-        val app = context.applicationContext
-        AppScope.io.launch {
-            try {
-                if (clip.builtIn) {
-                    val pcm = synchronized(lock) { pcmCache.getOrPut(clip.id) { SoundSynth.generate(clip.id) } }
-                    withContext(Dispatchers.Main) { if (_playing.value == clip.id) playPcm(clip.id, pcm) }
-                } else {
-                    val bytes = CryptoManager.decryptFile(fileFor(app, clip))
-                    withContext(Dispatchers.Main) { if (_playing.value == clip.id) playBytes(clip.id, bytes) }
-                }
-            } catch (e: Exception) {
-                _playing.value = null
-            }
-        }
+        synchronized(lock) { pcmCache[clip.id] = pcm }
+        return pcm
     }
 
-    private fun playPcm(id: String, pcm: ShortArray) {
+    private fun localTrack(pcm: ShortArray, volume: Float): AudioTrack {
         val t = AudioTrack.Builder()
             .setAudioAttributes(attributes)
             .setAudioFormat(
@@ -117,38 +114,69 @@ object Soundboard {
             .setBufferSizeInBytes(pcm.size * 2)
             .build()
         t.write(pcm, 0, pcm.size)
-        t.setNotificationMarkerPosition(pcm.size - 1)
-        t.setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
-            override fun onMarkerReached(track: AudioTrack?) {
-                if (_playing.value == id) stop()
-            }
-
-            override fun onPeriodicNotification(track: AudioTrack?) = Unit
-        })
-        track = t
-        t.play()
+        t.setVolume(volume)
+        return t
     }
 
-    private fun playBytes(id: String, bytes: ByteArray) {
-        val mp = MediaPlayer()
-        try {
-            mp.setAudioAttributes(attributes)
-            mp.setDataSource(ByteArrayMediaDataSource(bytes))
-            mp.setOnCompletionListener { if (_playing.value == id) stop() }
-            mp.prepare()
-            mp.start()
-            player = mp
-        } catch (e: Exception) {
-            mp.release()
-            _playing.value = null
+    fun play(context: Context, clip: SoundClip) {
+        stop()
+        val app = context.applicationContext
+        val inCall = CallManager.calls.value.isNotEmpty()
+        val inject = inCall && CallAudioInjector.isAvailable(app)
+        if (!inject && inCall && AppPrefs.soundboardSpeaker.value && !CallManager.isSpeakerOn) {
+            CallManager.setSpeaker(true)
+        }
+        val myToken = Any()
+        token = myToken
+        _playing.value = clip.id
+        job = AppScope.io.launch {
+            try {
+                val pcm = pcmFor(app, clip)
+                val durationMs = pcm.size * 1000L / SoundSynth.SAMPLE_RATE
+                val uplink = if (inject) CallAudioInjector.open(app) else null
+                if (uplink != null) {
+                    // Straight into the call. The local copy is just a quiet monitor for you.
+                    val (track, rate) = uplink
+                    uplinkTrack = track
+                    val data = Resampler.resample(pcm, SoundSynth.SAMPLE_RATE, rate)
+                    localTrack = localTrack(pcm, 0.35f).also { it.play() }
+                    track.play()
+                    var offset = 0
+                    while (offset < data.size && isActive && token === myToken) {
+                        val written = track.write(data, offset, minOf(2048, data.size - offset))
+                        if (written <= 0) break
+                        offset += written
+                    }
+                    delay(200)
+                } else {
+                    localTrack = localTrack(pcm, 1f).also { it.play() }
+                    delay(durationMs + 100)
+                }
+            } catch (e: Exception) {
+                // Clip could not be decoded or played – just reset the pad.
+            } finally {
+                releaseTracks()
+                if (token === myToken) {
+                    token = null
+                    _playing.value = null
+                }
+            }
         }
     }
 
+    private fun releaseTracks() {
+        localTrack?.let { runCatching { it.stop() }; it.release() }
+        localTrack = null
+        uplinkTrack?.let { runCatching { it.stop() }; it.release() }
+        uplinkTrack = null
+    }
+
     fun stop() {
-        track?.let { runCatching { it.stop() }; it.release() }
-        track = null
-        player?.let { runCatching { it.stop() }; it.release() }
-        player = null
+        token = null
+        job?.cancel()
+        job = null
+        localTrack?.let { runCatching { it.pause() } }
+        uplinkTrack?.let { runCatching { it.pause(); it.flush() } }
         _playing.value = null
     }
 
@@ -194,12 +222,14 @@ object Soundboard {
     }
 
     fun delete(context: Context, clip: SoundClip) = synchronized(lock) {
+        pcmCache.remove(clip.id)
         fileFor(context, clip).delete()
         persist(context, _custom.value.filterNot { it.id == clip.id })
     }
 
     fun wipe(context: Context) = synchronized(lock) {
         stop()
+        pcmCache.clear()
         dir(context).deleteRecursively()
         _custom.value = emptyList()
     }

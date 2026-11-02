@@ -56,6 +56,10 @@ jobs:
           cp app/build/outputs/apk/debug/*.apk "dist/NothingCall-${VERSION}-debug.apk"
           cp app/build/outputs/apk/release/*.apk "dist/NothingCall-${VERSION}-release.apk"
           git archive --format=zip --prefix="NothingCall-Privacy-${VERSION}/" -o "dist/NothingCall-Privacy-${VERSION}-source.zip" HEAD
+          # Magisk module (system mode): release APK as privileged system app
+          mkdir -p magisk/system/priv-app/NothingCall
+          cp "dist/NothingCall-${VERSION}-release.apk" magisk/system/priv-app/NothingCall/NothingCall.apk
+          (cd magisk && zip -qr "../dist/NothingCall-${VERSION}-magisk.zip" . -x README.md)
           ls -la dist
 
       - name: Upload APKs
@@ -68,7 +72,7 @@ jobs:
       - name: Upload source ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: NothingCall-source
+          name: NothingCall-zips
           path: dist/*.zip
 
       - name: Publish GitHub release

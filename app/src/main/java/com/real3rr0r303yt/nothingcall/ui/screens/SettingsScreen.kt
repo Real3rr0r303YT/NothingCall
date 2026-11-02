@@ -10,6 +10,10 @@
 
 package com.real3rr0r303yt.nothingcall.ui.screens
 
+import android.Manifest
+import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -22,7 +26,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AdminPanelSettings
+import androidx.compose.material.icons.filled.AutoDelete
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.ScreenLockPortrait
+import androidx.compose.material.icons.filled.SettingsPhone
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.DeleteForever
@@ -60,6 +71,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.real3rr0r303yt.nothingcall.BuildConfig
 import com.real3rr0r303yt.nothingcall.R
+import com.real3rr0r303yt.nothingcall.call.CallActions
+import com.real3rr0r303yt.nothingcall.data.CallLogCleaner
+import com.real3rr0r303yt.nothingcall.security.AppLock
+import com.real3rr0r303yt.nothingcall.spam.BlockRepository
+import com.real3rr0r303yt.nothingcall.util.Privileged
 import com.real3rr0r303yt.nothingcall.data.AppPrefs
 import com.real3rr0r303yt.nothingcall.data.ContactsRepository
 import com.real3rr0r303yt.nothingcall.data.LanguageManager
@@ -87,21 +103,52 @@ const val LICENSE_URL = "https://www.gnu.org/licenses/gpl-3.0.html"
 @Composable
 fun SettingsScreen(isDefaultDialer: Boolean, onRequestDefault: () -> Unit) {
     var page by rememberSaveable { mutableStateOf("main") }
-    if (page == "soundboard") {
-        SoundboardManageScreen(onBack = { page = "main" })
-    } else {
-        SettingsMain(isDefaultDialer, onRequestDefault, onOpenSoundboard = { page = "soundboard" })
+    when (page) {
+        "soundboard" -> SoundboardManageScreen(onBack = { page = "main" })
+        "spam" -> SpamScreen(onBack = { page = "main" })
+        else -> SettingsMain(
+            isDefaultDialer, onRequestDefault,
+            onOpenSoundboard = { page = "soundboard" },
+            onOpenSpam = { page = "spam" },
+        )
     }
 }
 
 @Composable
-private fun SettingsMain(isDefaultDialer: Boolean, onRequestDefault: () -> Unit, onOpenSoundboard: () -> Unit) {
+private fun SettingsMain(
+    isDefaultDialer: Boolean,
+    onRequestDefault: () -> Unit,
+    onOpenSoundboard: () -> Unit,
+    onOpenSpam: () -> Unit,
+) {
     val context = LocalContext.current
     val autoRecord by AppPrefs.autoRecord.flow.collectAsState()
     val source by AppPrefs.recordingSource.flow.collectAsState()
     val legalAccepted by AppPrefs.legalAccepted.flow.collectAsState()
     val speaker by AppPrefs.soundboardSpeaker.flow.collectAsState()
     val tones by AppPrefs.dialpadTones.flow.collectAsState()
+    val recordSpeaker by AppPrefs.recordSpeaker.flow.collectAsState()
+    val hideCallerId by AppPrefs.hideCallerId.flow.collectAsState()
+    val appLock by AppPrefs.appLock.flow.collectAsState()
+    val secureScreen by AppPrefs.secureScreen.flow.collectAsState()
+    val hideOnLock by AppPrefs.hideOnLockscreen.flow.collectAsState()
+    val retention by AppPrefs.callLogRetention.flow.collectAsState()
+    val rules by BlockRepository.rules.collectAsState()
+    val blockedLog by BlockRepository.log.collectAsState()
+    val systemRecord = remember { Privileged.canRecordCallAudio(context) }
+    val systemInject = remember { Privileged.canInjectCallAudio(context) }
+    var showRetention by remember { mutableStateOf(false) }
+    var pendingRetention by remember { mutableStateOf<String?>(null) }
+    val callLogPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        val value = pendingRetention
+        pendingRetention = null
+        if (granted && value != null) {
+            AppPrefs.callLogRetention.set(value)
+            AppScope.io.launch { CallLogCleaner.apply(context) }
+        } else if (!granted) {
+            context.toast(R.string.permission_missing)
+        }
+    }
 
     var showLanguage by remember { mutableStateOf(false) }
     var showSource by remember { mutableStateOf(false) }
@@ -146,6 +193,18 @@ private fun SettingsMain(isDefaultDialer: Boolean, onRequestDefault: () -> Unit,
         )
 
         Group(stringResource(R.string.settings_recording))
+        SettingRow(
+            title = stringResource(R.string.settings_system_mode),
+            subtitle = stringResource(
+                when {
+                    systemRecord && systemInject -> R.string.settings_system_mode_on
+                    systemRecord -> R.string.settings_system_mode_partial
+                    else -> R.string.settings_system_mode_off
+                }
+            ),
+            icon = Icons.Filled.AdminPanelSettings,
+            trailing = { if (systemRecord) Icon(Icons.Filled.Check, null, tint = NColors.Red) },
+        )
         val toggleAuto: (Boolean) -> Unit = { enabled ->
             if (enabled && !legalAccepted) showLegal = true else AppPrefs.autoRecord.set(enabled)
         }
@@ -161,6 +220,14 @@ private fun SettingsMain(isDefaultDialer: Boolean, onRequestDefault: () -> Unit,
             icon = Icons.Filled.Mic,
             onClick = { showSource = true },
         )
+        if (!systemRecord) {
+            SettingRow(
+                title = stringResource(R.string.settings_record_speaker),
+                icon = Icons.AutoMirrored.Filled.VolumeUp,
+                onClick = { AppPrefs.recordSpeaker.set(!recordSpeaker) },
+                trailing = { NSwitch(recordSpeaker) { AppPrefs.recordSpeaker.set(it) } },
+            )
+        }
         Text(
             stringResource(R.string.settings_recording_info),
             color = NColors.Gray, fontSize = 12.sp,
@@ -179,6 +246,63 @@ private fun SettingsMain(isDefaultDialer: Boolean, onRequestDefault: () -> Unit,
             icon = Icons.AutoMirrored.Filled.VolumeUp,
             onClick = { AppPrefs.soundboardSpeaker.set(!speaker) },
             trailing = { NSwitch(speaker) { AppPrefs.soundboardSpeaker.set(it) } },
+        )
+
+        Group(stringResource(R.string.settings_anonymity))
+        SettingRow(
+            title = stringResource(R.string.settings_hide_caller_id),
+            subtitle = stringResource(R.string.settings_hide_caller_id_sub),
+            icon = Icons.Filled.VisibilityOff,
+            onClick = { AppPrefs.hideCallerId.set(!hideCallerId) },
+            trailing = { NSwitch(hideCallerId) { AppPrefs.hideCallerId.set(it) } },
+        )
+        SettingRow(
+            title = stringResource(R.string.settings_network_callerid),
+            subtitle = stringResource(R.string.settings_network_callerid_sub),
+            icon = Icons.Filled.SettingsPhone,
+            onClick = { if (!CallActions.openNetworkCallSettings(context)) context.toast(R.string.no_app_found) },
+            trailing = { Icon(Icons.Filled.ChevronRight, null, tint = NColors.Gray) },
+        )
+        Text(
+            stringResource(R.string.anonymity_info),
+            color = NColors.Gray, fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+        )
+
+        Group(stringResource(R.string.settings_spam))
+        SettingRow(
+            title = stringResource(R.string.settings_spam),
+            subtitle = stringResource(R.string.settings_spam_sub, rules.size, blockedLog.size),
+            icon = Icons.Filled.Shield,
+            onClick = onOpenSpam,
+            trailing = { Icon(Icons.Filled.ChevronRight, null, tint = NColors.Gray) },
+        )
+
+        Group(stringResource(R.string.settings_opsec))
+        SettingRow(
+            title = stringResource(R.string.opsec_app_lock),
+            subtitle = stringResource(R.string.opsec_app_lock_sub),
+            icon = Icons.Filled.Fingerprint,
+            onClick = { toggleLock(context, !appLock) },
+            trailing = { NSwitch(appLock) { toggleLock(context, it) } },
+        )
+        SettingRow(
+            title = stringResource(R.string.opsec_secure_screen),
+            icon = Icons.Filled.ScreenLockPortrait,
+            onClick = { AppPrefs.secureScreen.set(!secureScreen) },
+            trailing = { NSwitch(secureScreen) { AppPrefs.secureScreen.set(it) } },
+        )
+        SettingRow(
+            title = stringResource(R.string.opsec_hide_lockscreen),
+            icon = Icons.Filled.Lock,
+            onClick = { AppPrefs.hideOnLockscreen.set(!hideOnLock) },
+            trailing = { NSwitch(hideOnLock) { AppPrefs.hideOnLockscreen.set(it) } },
+        )
+        SettingRow(
+            title = stringResource(R.string.opsec_call_log),
+            subtitle = stringResource(retentionOptions.firstOrNull { it.first == retention }?.second ?: R.string.retention_keep),
+            icon = Icons.Filled.AutoDelete,
+            onClick = { showRetention = true },
         )
 
         Group(stringResource(R.string.settings_privacy))
@@ -259,6 +383,26 @@ private fun SettingsMain(isDefaultDialer: Boolean, onRequestDefault: () -> Unit,
         )
     }
 
+    if (showRetention) {
+        ChoiceDialog(
+            title = stringResource(R.string.opsec_call_log),
+            options = retentionOptions.map { it.first to stringResource(it.second) },
+            selected = retention,
+            footer = stringResource(R.string.opsec_call_log_info),
+            onSelect = { value ->
+                showRetention = false
+                if (value == AppPrefs.RETENTION_KEEP || CallLogCleaner.hasPermission(context)) {
+                    AppPrefs.callLogRetention.set(value)
+                    AppScope.io.launch { CallLogCleaner.apply(context) }
+                } else {
+                    pendingRetention = value
+                    callLogPermission.launch(Manifest.permission.WRITE_CALL_LOG)
+                }
+            },
+            onDismiss = { showRetention = false },
+        )
+    }
+
     if (showSource) {
         ChoiceDialog(
             title = stringResource(R.string.settings_audio_source),
@@ -294,6 +438,7 @@ private fun SettingsMain(isDefaultDialer: Boolean, onRequestDefault: () -> Unit,
                     showWipe = false
                     AppScope.io.launch {
                         RecordingRepository.wipe(context)
+                        BlockRepository.wipe(context)
                         Soundboard.wipe(context)
                         ContactsRepository.wipePrivate(context)
                         CryptoManager.destroyKeys()
@@ -308,8 +453,23 @@ private fun SettingsMain(isDefaultDialer: Boolean, onRequestDefault: () -> Unit,
     }
 }
 
+private val retentionOptions = listOf(
+    AppPrefs.RETENTION_KEEP to R.string.retention_keep,
+    AppPrefs.RETENTION_IMMEDIATE to R.string.retention_immediate,
+    AppPrefs.RETENTION_DAY to R.string.retention_day,
+    AppPrefs.RETENTION_WEEK to R.string.retention_week,
+)
+
+private fun toggleLock(context: Context, enabled: Boolean) {
+    if (enabled && !AppLock.isDeviceSecure(context)) {
+        context.toast(R.string.opsec_no_lock)
+        return
+    }
+    AppPrefs.appLock.set(enabled)
+}
+
 @Composable
-private fun Group(title: String) {
+fun Group(title: String) {
     SectionLabel(title, Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 4.dp), color = NColors.Red)
 }
 
@@ -320,6 +480,7 @@ private fun ChoiceDialog(
     selected: String,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit,
+    footer: String? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -340,6 +501,10 @@ private fun ChoiceDialog(
                         Spacer(Modifier.size(8.dp))
                         Text(label, color = NColors.White)
                     }
+                }
+                if (footer != null) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(footer, color = NColors.Gray, fontSize = 12.sp)
                 }
             }
         },

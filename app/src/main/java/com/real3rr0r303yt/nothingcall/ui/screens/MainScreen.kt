@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import com.real3rr0r303yt.nothingcall.R
 import com.real3rr0r303yt.nothingcall.call.CallActions
 import com.real3rr0r303yt.nothingcall.call.SimOption
+import com.real3rr0r303yt.nothingcall.data.AppPrefs
 import com.real3rr0r303yt.nothingcall.data.Contact
 import com.real3rr0r303yt.nothingcall.data.ContactsRepository
 import com.real3rr0r303yt.nothingcall.ui.components.NCard
@@ -97,15 +98,21 @@ fun missingPermissions(context: Context) = requiredPermissions.filter {
     ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
 }
 
+data class PendingCall(val number: String, val sims: List<SimOption>, val anonymous: Boolean)
+
 /** Places calls and asks for the SIM when the device has several and no default. */
 @Stable
 class CallLauncher(private val context: Context) {
-    var pending by mutableStateOf<Pair<String, List<SimOption>>?>(null)
+    var pending by mutableStateOf<PendingCall?>(null)
 
-    fun call(number: String) {
+    fun call(number: String, anonymous: Boolean = AppPrefs.hideCallerId.value) {
         if (number.isBlank()) return
         val sims = CallActions.simChoices(context)
-        if (sims.size > 1) pending = number to sims else CallActions.placeCall(context, number)
+        if (sims.size > 1) {
+            pending = PendingCall(number, sims, anonymous)
+        } else {
+            CallActions.placeCall(context, number, anonymous = anonymous)
+        }
     }
 }
 
@@ -198,10 +205,10 @@ fun MainScreen(dialRequest: MutableState<String?>) {
                         number = number,
                         onNumberChange = { number = it },
                         contacts = contacts,
-                        onCall = launcher::call,
+                        onCall = { n, anonymous -> launcher.call(n, anonymous) },
                     )
-                    Tab.RECENTS -> RecentsScreen(refreshKey = resumeTick, onCall = launcher::call)
-                    Tab.CONTACTS -> ContactsScreen(contacts = contacts, onCall = launcher::call)
+                    Tab.RECENTS -> RecentsScreen(refreshKey = resumeTick, onCall = { launcher.call(it) })
+                    Tab.CONTACTS -> ContactsScreen(contacts = contacts, onCall = { launcher.call(it) })
                     Tab.RECORDINGS -> RecordingsScreen()
                     Tab.SETTINGS -> SettingsScreen(isDefaultDialer = isDefault, onRequestDefault = requestRole)
                 }
@@ -209,12 +216,12 @@ fun MainScreen(dialRequest: MutableState<String?>) {
         }
     }
 
-    launcher.pending?.let { (pendingNumber, sims) ->
+    launcher.pending?.let { pending ->
         SimChooserDialog(
-            sims = sims,
+            sims = pending.sims,
             onPick = { sim ->
                 launcher.pending = null
-                CallActions.placeCall(context, pendingNumber, sim.handle)
+                CallActions.placeCall(context, pending.number, sim.handle, pending.anonymous)
             },
             onDismiss = { launcher.pending = null },
         )

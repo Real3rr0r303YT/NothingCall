@@ -16,7 +16,13 @@ import android.telecom.CallAudioState
 import android.telecom.InCallService
 import com.real3rr0r303yt.nothingcall.R
 import com.real3rr0r303yt.nothingcall.recording.RecordingService
+import com.real3rr0r303yt.nothingcall.data.AppPrefs
+import com.real3rr0r303yt.nothingcall.data.CallLogCleaner
 import com.real3rr0r303yt.nothingcall.soundboard.Soundboard
+import com.real3rr0r303yt.nothingcall.spam.BlockRepository
+import com.real3rr0r303yt.nothingcall.spam.SpamFilter
+import com.real3rr0r303yt.nothingcall.util.AppScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -47,6 +53,16 @@ class NothingInCallService : InCallService() {
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
         CallManager.onCallAdded(applicationContext, call)
+        if (call.stateCompat() == Call.STATE_RINGING && !AppPrefs.silenceInsteadOfReject.value) {
+            // Second line of defence in case Telecom did not consult NothingScreeningService.
+            val reason = runCatching { SpamFilter.check(this, call.details) }.getOrNull()
+            if (reason != null) {
+                call.reject(false, null)
+                val number = CallActions.stripClir(call.details?.handle?.schemeSpecificPart.orEmpty())
+                AppScope.io.launch { runCatching { BlockRepository.logBlocked(applicationContext, number, reason) } }
+                return
+            }
+        }
         // Incoming calls are surfaced via the full-screen notification; everything else opens the UI.
         if (call.stateCompat() != Call.STATE_RINGING) launchInCallUi()
     }
@@ -57,6 +73,14 @@ class NothingInCallService : InCallService() {
         if (CallManager.calls.value.isEmpty()) {
             RecordingService.stop(this)
             Soundboard.stop()
+            if (AppPrefs.callLogRetention.value != AppPrefs.RETENTION_KEEP) {
+                val app = applicationContext
+                // Telecom writes the call-log entry shortly after the call is gone.
+                AppScope.io.launch {
+                    delay(4_000)
+                    CallLogCleaner.apply(app)
+                }
+            }
         }
     }
 

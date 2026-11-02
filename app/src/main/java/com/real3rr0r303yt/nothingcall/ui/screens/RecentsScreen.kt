@@ -13,7 +13,8 @@
 package com.real3rr0r303yt.nothingcall.ui.screens
 
 import android.provider.CallLog
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,9 +32,14 @@ import androidx.compose.material.icons.filled.CallMissed
 import androidx.compose.material.icons.filled.CallReceived
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +49,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.real3rr0r303yt.nothingcall.R
+import com.real3rr0r303yt.nothingcall.call.CallActions
+import com.real3rr0r303yt.nothingcall.spam.BlockRepository
+import com.real3rr0r303yt.nothingcall.util.AppScope
+import com.real3rr0r303yt.nothingcall.util.toast
+import kotlinx.coroutines.launch
 import com.real3rr0r303yt.nothingcall.data.CallLogEntry
 import com.real3rr0r303yt.nothingcall.data.CallLogRepository
 import com.real3rr0r303yt.nothingcall.ui.components.EmptyState
@@ -55,6 +66,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun RecentsScreen(refreshKey: Int, onCall: (String) -> Unit) {
     val context = LocalContext.current
+    var blockCandidate by remember { mutableStateOf<CallLogEntry?>(null) }
     val entries by produceState<List<CallLogEntry>?>(initialValue = null, refreshKey) {
         value = withContext(Dispatchers.IO) { CallLogRepository.load(context) }
     }
@@ -67,14 +79,37 @@ fun RecentsScreen(refreshKey: Int, onCall: (String) -> Unit) {
             list == null -> Unit
             list.isEmpty() -> EmptyState(stringResource(R.string.recents_empty))
             else -> LazyColumn(Modifier.fillMaxSize()) {
-                items(list, key = { it.id }) { entry -> RecentRow(entry, onCall) }
+                items(list, key = { it.id }) { entry ->
+                    RecentRow(entry, onCall, onLongClick = { blockCandidate = entry })
+                }
             }
         }
     }
+
+    blockCandidate?.let { entry ->
+        val number = CallActions.stripClir(entry.number)
+        AlertDialog(
+            onDismissRequest = { blockCandidate = null },
+            containerColor = NColors.SurfaceHigh,
+            title = { Text(stringResource(R.string.recents_block)) },
+            text = { Text(stringResource(R.string.recents_block_confirm, entry.name ?: number), color = NColors.Gray) },
+            confirmButton = {
+                TextButton(onClick = {
+                    blockCandidate = null
+                    AppScope.io.launch { runCatching { BlockRepository.addRule(context, number) } }
+                    context.toast(R.string.block_added)
+                }) { Text(stringResource(R.string.recents_block), color = NColors.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { blockCandidate = null }) { Text(stringResource(R.string.cancel), color = NColors.White) }
+            },
+        )
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RecentRow(entry: CallLogEntry, onCall: (String) -> Unit) {
+private fun RecentRow(entry: CallLogEntry, onCall: (String) -> Unit, onLongClick: () -> Unit) {
     val context = LocalContext.current
     val missed = entry.type == CallLog.Calls.MISSED_TYPE
     val (icon, typeLabel) = when (entry.type) {
@@ -85,11 +120,16 @@ private fun RecentRow(entry: CallLogEntry, onCall: (String) -> Unit) {
         CallLog.Calls.BLOCKED_TYPE -> Icons.Filled.Block to R.string.call_type_blocked
         else -> Icons.Filled.CallReceived to R.string.call_type_incoming
     }
-    val title = entry.name ?: entry.number.ifBlank { stringResource(R.string.unknown_number) }
+    val number = CallActions.stripClir(entry.number)
+    val title = entry.name ?: number.ifBlank { stringResource(R.string.unknown_number) }
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable(enabled = entry.number.isNotBlank()) { onCall(entry.number) }
+            .combinedClickable(
+                enabled = number.isNotBlank(),
+                onClick = { onCall(number) },
+                onLongClick = onLongClick,
+            )
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -114,8 +154,8 @@ private fun RecentRow(entry: CallLogEntry, onCall: (String) -> Unit) {
             }
             Text(meta, color = NColors.Gray, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (entry.number.isNotBlank()) {
-            IconButton(onClick = { onCall(entry.number) }) {
+        if (number.isNotBlank()) {
+            IconButton(onClick = { onCall(number) }) {
                 Icon(Icons.Filled.Call, stringResource(R.string.dialer_call), tint = NColors.White)
             }
         }

@@ -17,13 +17,23 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.lifecycleScope
+import com.real3rr0r303yt.nothingcall.data.AppPrefs
+import com.real3rr0r303yt.nothingcall.security.AppLock
+import com.real3rr0r303yt.nothingcall.ui.screens.LockScreen
 import com.real3rr0r303yt.nothingcall.ui.screens.MainScreen
 import com.real3rr0r303yt.nothingcall.ui.theme.NothingTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     /** Number handed over via ACTION_DIAL / tel: links. */
     private val dialRequest = mutableStateOf<String?>(null)
+
+    private val locked = mutableStateOf(false)
+    private var firstStart = true
+    private var prompting = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,12 +41,49 @@ class MainActivity : AppCompatActivity() {
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
-        if (savedInstanceState == null) handleIntent(intent)
+        lifecycleScope.launch {
+            AppPrefs.secureScreen.flow.collect { AppLock.applySecureFlag(this@MainActivity, it) }
+        }
+        if (savedInstanceState == null) handleIntent(intent) else firstStart = false
         setContent {
             NothingTheme {
-                MainScreen(dialRequest = dialRequest)
+                val isLocked by locked
+                if (isLocked) {
+                    LockScreen(onUnlock = { promptUnlock() })
+                } else {
+                    MainScreen(dialRequest = dialRequest)
+                }
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (AppLock.shouldLock(this, firstStart)) locked.value = true
+        firstStart = false
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (locked.value) promptUnlock()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations && !prompting) AppLock.onBackground()
+    }
+
+    private fun promptUnlock() {
+        if (prompting) return
+        prompting = true
+        AppLock.authenticate(
+            this,
+            onSuccess = {
+                prompting = false
+                locked.value = false
+            },
+            onFailure = { prompting = false },
+        )
     }
 
     override fun onNewIntent(intent: Intent) {

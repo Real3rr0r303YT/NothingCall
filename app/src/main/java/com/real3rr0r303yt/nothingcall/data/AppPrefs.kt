@@ -23,6 +23,11 @@ object AppPrefs {
     const val SOURCE_VOICE_COMM = "voice_comm"
     const val SOURCE_MIC = "mic"
 
+    const val RETENTION_KEEP = "keep"
+    const val RETENTION_IMMEDIATE = "immediate"
+    const val RETENTION_DAY = "1d"
+    const val RETENTION_WEEK = "7d"
+
     private lateinit var prefs: SharedPreferences
 
     class Pref<T>(private val key: String, private val default: T) {
@@ -55,9 +60,29 @@ object AppPrefs {
     val legalAccepted = Pref("legal_accepted", false)
     val soundboardSpeaker = Pref("soundboard_speaker", true)
     val dialpadTones = Pref("dialpad_tones", true)
+    val recordSpeaker = Pref("record_speaker", false)
+
+    // Anonymity
+    val hideCallerId = Pref("hide_caller_id", false)
+
+    // Spam protection
+    val blockHidden = Pref("block_hidden", false)
+    val blockUnknown = Pref("block_unknown", false)
+    val blockUnverified = Pref("block_unverified", true)
+    val silenceInsteadOfReject = Pref("silence_instead_of_reject", false)
+
+    // OPSEC
+    val appLock = Pref("app_lock", false)
+    val secureScreen = Pref("secure_screen", false)
+    val hideOnLockscreen = Pref("hide_on_lockscreen", false)
+    val callLogRetention = Pref("call_log_retention", RETENTION_KEEP)
 
     fun init(context: Context) {
         prefs = context.getSharedPreferences("nc_settings", Context.MODE_PRIVATE)
-        listOf(autoRecord, recordingSource, legalAccepted, soundboardSpeaker, dialpadTones).forEach { it.load() }
+        listOf(
+            autoRecord, recordingSource, legalAccepted, soundboardSpeaker, dialpadTones, recordSpeaker,
+            hideCallerId, blockHidden, blockUnknown, blockUnverified, silenceInsteadOfReject,
+            appLock, secureScreen, hideOnLockscreen, callLogRetention,
+        ).forEach { it.load() }
     }
 }

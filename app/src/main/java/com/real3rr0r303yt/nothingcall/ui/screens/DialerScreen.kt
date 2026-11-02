@@ -16,6 +16,8 @@ import android.media.ToneGenerator
 import android.provider.ContactsContract
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,12 +36,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +68,7 @@ import com.real3rr0r303yt.nothingcall.ui.components.RoundIconButton
 import com.real3rr0r303yt.nothingcall.ui.components.SectionLabel
 import com.real3rr0r303yt.nothingcall.ui.components.dotGrid
 import com.real3rr0r303yt.nothingcall.ui.theme.NColors
+import com.real3rr0r303yt.nothingcall.ui.theme.NType
 
 private val DTMF_TONES = mapOf(
     '0' to ToneGenerator.TONE_DTMF_0, '1' to ToneGenerator.TONE_DTMF_1, '2' to ToneGenerator.TONE_DTMF_2,
@@ -75,12 +83,15 @@ fun DialerScreen(
     number: String,
     onNumberChange: (String) -> Unit,
     contacts: List<Contact>,
-    onCall: (String) -> Unit,
+    onCall: (number: String, anonymous: Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
     val tonesEnabled by AppPrefs.dialpadTones.flow.collectAsState()
     val privateContacts by ContactsRepository.privateContacts.collectAsState()
+
+    val defaultAnonymous by AppPrefs.hideCallerId.flow.collectAsState()
+    var anonymous by rememberSaveable(defaultAnonymous) { mutableStateOf(defaultAnonymous) }
 
     val toneGenerator = remember { runCatching { ToneGenerator(AudioManager.STREAM_DTMF, 70) }.getOrNull() }
     DisposableEffect(Unit) { onDispose { toneGenerator?.release() } }
@@ -122,7 +133,7 @@ fun DialerScreen(
                         Row(
                             Modifier
                                 .clip(CircleShape)
-                                .clickable { onCall(num) }
+                                .clickable { onCall(num, anonymous) }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
@@ -154,6 +165,30 @@ fun DialerScreen(
             }
         }
 
+        // Anonymous toggle (CLIR #31#)
+        Row(
+            Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = 8.dp)
+                .clip(CircleShape)
+                .border(1.dp, if (anonymous) NColors.Red else NColors.Outline, CircleShape)
+                .background(if (anonymous) NColors.Red.copy(alpha = 0.15f) else NColors.Black)
+                .clickable { anonymous = !anonymous }
+                .padding(horizontal = 14.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                if (anonymous) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, null,
+                tint = if (anonymous) NColors.Red else NColors.Gray, modifier = Modifier.size(16.dp),
+            )
+            Spacer(Modifier.size(8.dp))
+            Text(
+                stringResource(if (anonymous) R.string.dialer_anonymous_on else R.string.dialer_anonymous),
+                style = NType.label,
+                color = if (anonymous) NColors.White else NColors.Gray,
+            )
+        }
+
         Keypad(
             onKey = ::press,
             onLongKey = { c ->
@@ -176,7 +211,7 @@ fun DialerScreen(
             RoundIconButton(
                 icon = Icons.Filled.Call,
                 contentDescription = stringResource(R.string.dialer_call),
-                onClick = { onCall(number) },
+                onClick = { onCall(number, anonymous) },
                 size = 72.dp,
                 container = NColors.Red,
                 enabled = number.isNotBlank(),

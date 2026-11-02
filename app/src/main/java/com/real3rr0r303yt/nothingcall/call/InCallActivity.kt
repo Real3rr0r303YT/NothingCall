@@ -18,6 +18,10 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.real3rr0r303yt.nothingcall.data.AppPrefs
+import com.real3rr0r303yt.nothingcall.security.AppLock
+import kotlinx.coroutines.launch
 import com.real3rr0r303yt.nothingcall.ui.screens.InCallScreen
 import com.real3rr0r303yt.nothingcall.ui.theme.NothingTheme
 
@@ -32,6 +36,9 @@ class InCallActivity : AppCompatActivity() {
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
         )
+        lifecycleScope.launch {
+            AppPrefs.secureScreen.flow.collect { AppLock.applySecureFlag(this@InCallActivity, it) }
+        }
         handleIntent(intent)
         setContent {
             NothingTheme {

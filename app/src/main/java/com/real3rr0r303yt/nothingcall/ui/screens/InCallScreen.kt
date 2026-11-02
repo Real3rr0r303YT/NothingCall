@@ -11,6 +11,7 @@
 package com.real3rr0r303yt.nothingcall.ui.screens
 
 import android.Manifest
+import android.app.KeyguardManager
 import android.content.Context
 import android.os.PowerManager
 import android.telecom.Call
@@ -33,6 +34,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Dialpad
@@ -86,7 +88,10 @@ import com.real3rr0r303yt.nothingcall.ui.components.dotGrid
 import com.real3rr0r303yt.nothingcall.ui.theme.NColors
 import com.real3rr0r303yt.nothingcall.ui.theme.NType
 import com.real3rr0r303yt.nothingcall.util.Format
+import com.real3rr0r303yt.nothingcall.spam.BlockRepository
+import com.real3rr0r303yt.nothingcall.util.AppScope
 import com.real3rr0r303yt.nothingcall.util.toast
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -169,8 +174,9 @@ fun InCallScreen(onFinished: () -> Unit) {
                     BlinkingDot()
                     Spacer(Modifier.width(6.dp))
                     val recElapsed = ticker(true) - rec.startedAt
+                    val recMode = stringResource(if (rec.bothSides) R.string.incall_rec_both else R.string.incall_rec_mic)
                     SectionLabel(
-                        "${stringResource(R.string.incall_rec)} ${Format.duration(recElapsed)}",
+                        "${stringResource(R.string.incall_rec)} ${Format.duration(recElapsed)} · $recMode",
                         color = NColors.Red,
                     )
                 }
@@ -178,15 +184,22 @@ fun InCallScreen(onFinished: () -> Unit) {
 
             Spacer(Modifier.height(40.dp))
 
-            // Caller
-            val title = shown?.title ?: stringResource(R.string.unknown_number)
+            // Caller – optionally hidden while the device is locked (OPSEC)
+            val hideOnLock by AppPrefs.hideOnLockscreen.flow.collectAsStateWithLifecycle()
+            val keyguardTick = ticker(hideOnLock)
+            val keyguardLocked = remember(keyguardTick) {
+                context.getSystemService(KeyguardManager::class.java)?.isKeyguardLocked == true
+            }
+            val concealed = hideOnLock && keyguardLocked
+            val title = if (concealed) stringResource(R.string.incall_hidden)
+            else shown?.title ?: stringResource(R.string.unknown_number)
             DotMatrixText(
                 title,
                 Modifier.fillMaxWidth(),
                 dotSize = 5.dp,
                 contentAlignment = Alignment.Center,
             )
-            if (shown?.name != null && shown.number.isNotBlank()) {
+            if (!concealed && shown?.name != null && shown.number.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
                 Text(shown.number, style = NType.mono, color = NColors.Gray)
             }
@@ -210,7 +223,8 @@ fun InCallScreen(onFinished: () -> Unit) {
                         Column(Modifier.weight(1f)) {
                             SectionLabel(stateLabel(other, false))
                             Text(
-                                other.title ?: stringResource(R.string.unknown_number),
+                                if (concealed) stringResource(R.string.incall_hidden)
+                                else other.title ?: stringResource(R.string.unknown_number),
                                 color = NColors.White, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                         }
@@ -289,6 +303,13 @@ fun InCallScreen(onFinished: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(8.dp))
+                val injectMode = remember { Soundboard.mode(context) == Soundboard.Mode.INJECT }
+                Text(
+                    stringResource(if (injectMode) R.string.soundboard_mode_inject else R.string.soundboard_mode_speaker),
+                    color = if (injectMode) NColors.White else NColors.Gray,
+                    fontSize = 12.sp,
+                )
+                Spacer(Modifier.height(8.dp))
                 SoundboardGrid(Modifier.fillMaxWidth().height(420.dp))
                 Spacer(Modifier.height(16.dp))
             }
@@ -337,7 +358,7 @@ private fun stateLabel(snapshot: CallSnapshot?, ended: Boolean): String = string
 @Composable
 private fun IncomingActions(call: CallSnapshot) {
     Row(
-        Modifier.fillMaxWidth().padding(bottom = 56.dp),
+        Modifier.fillMaxWidth().padding(bottom = 24.dp),
         horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
         LabeledButton(
@@ -354,6 +375,21 @@ private fun IncomingActions(call: CallSnapshot) {
             content = NColors.Black,
             onClick = { CallManager.answer(call.call) },
         )
+    }
+    if (call.number.isNotBlank()) {
+        val context = LocalContext.current
+        TextButton(
+            onClick = {
+                AppScope.io.launch { runCatching { BlockRepository.addRule(context, call.number) } }
+                CallManager.hangup(call)
+                context.toast(R.string.block_added)
+            },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+        ) {
+            Icon(Icons.Filled.Block, null, tint = NColors.Gray, modifier = Modifier.size(16.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.incall_block).uppercase(), style = NType.label, color = NColors.Gray)
+        }
     }
 }
 
