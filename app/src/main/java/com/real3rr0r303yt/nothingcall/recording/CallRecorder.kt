@@ -52,7 +52,8 @@ class CallRecorder(private val context: Context) {
                 r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
                 r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                 r.setAudioChannels(1)
-                r.setAudioSamplingRate(44_100)
+                // The telephony path (VOICE_CALL) often rejects 44.1 kHz at start(); 16 kHz is universally supported.
+                r.setAudioSamplingRate(if (source == MediaRecorder.AudioSource.VOICE_CALL) 16_000 else 44_100)
                 r.setAudioEncodingBitRate(96_000)
                 r.setOutputFile(file.absolutePath)
                 r.prepare()

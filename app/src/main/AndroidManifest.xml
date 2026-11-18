@@ -21,6 +21,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Only granted when installed as privileged system app (root module); enables VOICE_CALL recording of both sides. -->
+    <uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- Privacy guarantee: no network access at all, even if a library asks for it. -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />

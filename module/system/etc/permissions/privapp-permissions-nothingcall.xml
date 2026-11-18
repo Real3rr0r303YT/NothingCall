@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Allowlist for NothingCall as privileged app. Every privileged permission the app requests must be here, otherwise Android refuses to boot. -->
+<permissions>
+    <privapp-permissions package="com.real3rr0r303yt.nothingcall">
+        <permission name="android.permission.CAPTURE_AUDIO_OUTPUT" />
+    </privapp-permissions>
+</permissions>

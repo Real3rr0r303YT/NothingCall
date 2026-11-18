@@ -56,6 +56,8 @@ jobs:
           cp app/build/outputs/apk/debug/*.apk "dist/NothingCall-${VERSION}-debug.apk"
           cp app/build/outputs/apk/release/*.apk "dist/NothingCall-${VERSION}-release.apk"
           git archive --format=zip --prefix="NothingCall-Privacy-${VERSION}/" -o "dist/NothingCall-Privacy-${VERSION}-source.zip" HEAD
+          # priv-app: lets the system grant CAPTURE_AUDIO_OUTPUT for two-sided call recording
+          bash module/build.sh "dist/NothingCall-${VERSION}-release.apk" priv-app dist
           ls -la dist
 
       - name: Upload APKs
@@ -69,7 +71,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: NothingCall-source
-          path: dist/*.zip
+          path: dist/*-source.zip
+
+      - name: Upload root module (Magisk / KernelSU / APatch)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NothingCall-module
+          path: dist/*-module.zip
+          if-no-files-found: error
 
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
