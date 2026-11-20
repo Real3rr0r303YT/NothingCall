@@ -50,4 +50,9 @@ class MainActivity : AppCompatActivity() {
         val data = intent.data ?: return
         if (data.scheme == "tel") dialRequest.value = data.schemeSpecificPart.orEmpty()
     }
+
+    override fun onStop() {
+        super.onStop()
+        com.real3rr0r303yt.nothingcall.widget.FavoritesWidget.updateAll(this)
+    }
 }

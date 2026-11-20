@@ -18,6 +18,7 @@ NothingCall ist eine vollständige Telefon-App (Standard-Dialer) mit tiefschwarz
 - **In-Call-Soundboard** (inspiriert von One UI): 8 integrierte, synthetisch erzeugte Clips sowie eigene importierte Clips (verschlüsselt gespeichert)
 - **Kontakte**: Systemkontakte (nur lesend) und **private, verschlüsselte Kontakte**, die nur in NothingCall existieren
 - **Anrufverlauf** mit verpassten Anrufen in Rot
+- **Widget**: Favoriten (markierte Kontakte) mit einem Tipp – öffnet den Wähler mit Nummer, ruft nie versehentlich an
 - **Deutsch & Englisch**: folgt automatisch der Systemsprache oder lässt sich in den Einstellungen umschalten
 
 ### Datenschutz
@@ -58,6 +59,7 @@ NothingCall is a full replacement phone app (default dialer) with a true-black O
 - **In-call soundboard** (inspired by One UI): 8 built-in procedurally synthesized clips plus your own imported clips (stored encrypted)
 - **Contacts**: system contacts (read-only) plus **private encrypted contacts** that exist only inside NothingCall
 - **Call history** with missed calls in red
+- **Widget**: starred contacts one tap away – opens the dialer with the number, never calls by accident
 - **German & English**: follows the system language automatically or can be switched in settings
 
 ### Privacy

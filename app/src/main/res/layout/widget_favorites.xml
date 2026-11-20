@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NothingCall widget – GPL-3.0-or-later – Made by 3rr0r303YT on TikTok -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="18dp"
+            android:layout_weight="1"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/widget_fav_name"
+            android:scaleType="fitStart" />
+
+        <TextView
+            android:id="@+id/widget_keypad"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_button_red"
+            android:fontFamily="monospace"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:text="@string/widget_fav_keypad"
+            android:textColor="#FFFFFFFF"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+        <TextView
+            android:id="@+id/widget_fav1"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/widget_button_bg"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_fav2"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/widget_button_bg"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_fav3"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/widget_button_bg"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/widget_fav4"
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/widget_button_bg"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:textColor="#FFFFFFFF"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/widget_hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:fontFamily="monospace"
+        android:textColor="#FF8C8C8C"
+        android:textSize="12sp"
+        android:visibility="gone" />
+</LinearLayout>

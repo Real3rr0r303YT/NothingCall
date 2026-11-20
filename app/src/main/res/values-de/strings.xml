@@ -151,4 +151,10 @@
     <string name="notif_ongoing">Laufender Anruf</string>
     <string name="notif_recording">Anruf wird aufgenommen…</string>
     <string name="notif_recording_text">Verschlüsselt · nur auf diesem Gerät</string>
+    <!-- Widget -->
+    <string name="widget_fav_name">Favoriten</string>
+    <string name="widget_fav_desc">Markierte Kontakte mit einem Tipp – öffnet den Wähler, ruft nie versehentlich an</string>
+    <string name="widget_fav_keypad">TASTEN</string>
+    <string name="widget_fav_empty">Markiere Kontakte mit einem Stern</string>
+    <string name="widget_fav_permission">Kontaktzugriff in der App erlauben</string>
 </resources>
