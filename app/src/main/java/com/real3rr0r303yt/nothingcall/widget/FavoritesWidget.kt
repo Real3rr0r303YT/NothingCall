@@ -8,14 +8,6 @@
  * (at your option) any later version. See the LICENSE file for details.
  */
 
-package com.real3rr0r303yt.nothingcall
-
-import android.content.Intent
-import android.graphics.Color
-import android.os.Bundle
-import androidx.activity.SystemBarStyle
-import androidx.activity.compose.setContent
-
 package com.real3rr0r303yt.nothingcall.widget
 
 import android.app.PendingIntent
